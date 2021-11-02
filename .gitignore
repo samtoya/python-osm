@@ -1,0 +1,8 @@
+venv
+.idea
+__pycache__
+output
+localized_countries
+output__back
+*.json
+*.DS_Store
