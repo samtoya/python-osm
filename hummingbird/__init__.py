@@ -30,12 +30,22 @@ class HummingBird:
         print('-- Localizing State : {}, {}'.format(state, country))
         osm = self._geocode('{}, {}'.format(state, country))
         if osm is not None and len(osm) > 0:
+            north_east = osm['bbox'].get('northeast')
+            south_west = osm['bbox'].get('southwest')
+            south_latitude = float(south_west[0])
+            north_latitude = float(north_east[0])
+            west_longitude = float(south_west[1])
+            east_longitude = float(north_east[1])
             return {
                 # 'division': osm,
                 'name': state,
                 # 'country': country,
                 # 'latitude': float(osm['lat']),
                 # 'longitude': float(osm['lng']),
+                'north_latitude': north_latitude,
+                'south_latitude': south_latitude,
+                'west_longitude': west_longitude,
+                'east_longitude': east_longitude,
                 'coordinates': self._get_division_coordinates(osm['bbox']),
                 # 'polygon': pangolin.generate_boundary_for_place(osm['osm_id']),
                 'sub_divisions': {}

@@ -59,6 +59,7 @@ class WoodPecker:
             [1, "Generate polygons for a single country (Default)"],
             [2, "Generate polygons for global data"],
             [3, "Generate polygons for a place"],
+            [4, "Generate polygons for global data and append polygon to global data"],
         ]
         TableIt.printTable(table_data)
         return input("Choose from the options above:? ")

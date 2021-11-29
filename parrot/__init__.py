@@ -9,8 +9,8 @@ from pangolin import Pangolin
 from sparrow import Sparrow
 from woodpecker import WoodPecker
 
-f = open('/Users/snoocode/Code/PythonProjects/SnooCODE/potr/data/global_data.json')
-directory_path = '/Users/snoocode/Code/PythonProjects/SnooCODE/potr/localized_countries'
+f = open('/Users/snoocode/Code/PythonProjects/potr/data/global_data.json')
+directory_path = '/Users/snoocode/Code/PythonProjects/potr/localized_countries'
 
 
 def dd(data):
@@ -38,7 +38,7 @@ class Parrot:
             'countries': {},
         }
         countries = data.get('countries')
-        country = Sparrow.country(country_input.capitalize())
+        country = Sparrow.country(country_input.title())
         country_name = country.address
         # .encode('ascii', 'ignore').decode('utf-8')
         localized_country = self.w.localize_country(country_name)
@@ -173,10 +173,12 @@ class Parrot:
             self.retrieve_polygons_for_global_data()
         elif option == '3':
             self.retrieve_polygons_for_a_place()
+        elif option == '4':
+            self.retrieve_polygons_for_global_data_and_append()
 
     def retrieve_polygons_for_single_country(self):
-        country_input = self.w.ask_for_country_name().capitalize()
-        country_geo = Sparrow.country(country_input.capitalize())
+        country_input = self.w.ask_for_country_name().title()
+        country_geo = Sparrow.country(country_input.title())
         data = self.h._geocode(country_input)
         if data is not None:
             osm_id = data['osm_id']
@@ -236,8 +238,7 @@ class Parrot:
     def retrieve_polygons_for_global_data(self):
         global_data = json.load(f)
         for country in list(global_data.get('countries').keys()):
-            print(country)
-            country_name = country.capitalize()
+            country_name = country.title()
             data = self.h._geocode(country_name)
             if data is not None:
                 osm_id = data['osm_id']
@@ -255,7 +256,7 @@ class Parrot:
             states = list(global_data.get('countries').get(country).get('divisions').keys())
             if len(states) > 0:
                 for state in states:
-                    state_name = state.capitalize()
+                    state_name = state.title()
                     geo = self.h._geocode(f'{state_name}, {country_name}')
                     data = {}
                     if geo is not None:
@@ -295,3 +296,68 @@ class Parrot:
 
     def retrieve_polygons_for_a_place(self):
         pass
+
+    def retrieve_polygons_for_global_data_and_append(self):
+        global_data = json.load(f)
+        data = global_data
+        for country in list(global_data.get('countries').keys()):
+            try:
+                country_data = data.get("countries").get(country)
+                if 'boundary_polygon' in country_data:
+                    continue
+                country_name = country.title()
+                geocoded_country = self.h._geocode(country_name)
+                if geocoded_country is not None:
+                    osm_id = geocoded_country['osm_id']
+                    print(f'-- Getting polygon for : {country_name}, with OSM ID : {osm_id}')
+                    bounds = self.p.generate_boundary_for_place(osm_id)
+                    country_data['boundary_polygon'] = bounds
+                divisions = list(global_data.get('countries').get(country).get('divisions').keys())
+                if len(divisions) > 0:
+                    for division in divisions:
+                        try:
+                            division_data = data.get("countries").get(country).get('divisions').get(division)
+                            if 'boundary_polygon' in division_data:
+                                continue
+                            state_name = division.title()
+                            geocoded_state = self.h._geocode(f'{state_name}, {country_name}')
+                            if geocoded_state is not None:
+                                osm_id = geocoded_state['osm_id']
+                                print(f'-- Getting polygon for : {state_name}, {country_name}, with OSM ID : {osm_id}')
+                                bounds = self.p.generate_boundary_for_place(osm_id)
+                                division_data['boundary_polygon'] = bounds
+                            sub_divisions = list(
+                                global_data.get('countries').get(country).get('divisions').get(division).get(
+                                    'sub_divisions').keys())
+                            if len(sub_divisions) > 0:
+                                for sub_division in sub_divisions:
+                                    try:
+                                        sub_division_data = data.get("countries").get(country).get('divisions').get(
+                                            division).get(
+                                            'sub_divisions').get(sub_division)
+                                        if 'boundary_polygon' in sub_division_data:
+                                            continue
+                                        city_name = division.title()
+                                        geocoded_city = self.h._geocode(f'{city_name}, {state_name}, {country_name}')
+                                        if geocoded_city is not None:
+                                            osm_id = geocoded_city['osm_id']
+                                            print(
+                                                f"-- Getting polygon for : {city_name}, {state_name}, {country_name}, with OSM ID : {osm_id}")
+                                            bounds = self.p.generate_boundary_for_place(osm_id)
+                                            sub_division_data['boundary_polygon'] = bounds
+                                    except KeyError:
+                                        continue
+                        except KeyError:
+                            continue
+            except KeyError:
+                print(f"Couldn't find data for: {country}")
+                continue
+            except:
+                print(f"Couldn't find data for: {country}")
+                continue
+        self.handle_saving_data(
+            identifier="1",
+            country='global_data',
+            data=data,
+            directory='global'
+        )

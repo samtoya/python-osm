@@ -10,7 +10,9 @@ class Sparrow:
     def country(country):
         try:
             g = geocoder.geonames(location=country, key=key)
-            return geocoder.geonames(location=g.geonames_id, key=key, method='details')
+            if g.ok:
+                return geocoder.geonames(location=g.geonames_id, key=key, method='details')
+            return geocoder.geonames(location=country, key=key, method='details')
         except:
             try:
                 return geocoder.geonames(location=g.geonames_id, key=key1, method='details')
